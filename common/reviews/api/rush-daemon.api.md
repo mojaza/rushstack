@@ -14,6 +14,8 @@ import type { IDaemonEventEnvelope } from '@rushstack/rush-daemon-protocol';
 import type { IDaemonPaths } from '@rushstack/rush-daemon-transport';
 import type { IDaemonPhasedRequest } from '@rushstack/rush-daemon-protocol';
 import type { IDaemonPhasedRequestResult } from '@rushstack/rush-daemon-protocol';
+import type { IDaemonRequestAdmissionOptions } from '@rushstack/rush-daemon-protocol';
+import type { IDaemonRequestQueuePositionMessage } from '@rushstack/rush-daemon-protocol';
 import type { IDaemonSetRawModeMessage } from '@rushstack/rush-daemon-protocol';
 import type { IDaemonTerminalPolicyResult } from '@rushstack/rush-daemon-protocol';
 import type { IInputsSnapshot } from '@microsoft/rush-lib';
@@ -139,6 +141,8 @@ export interface IGlobalCommandExecutionResult {
 export interface IGlobalCommandRequestClient {
     readonly abortSignal: AbortSignal;
     readonly interactiveSession?: IInteractiveRequestSession;
+    readonly supportsRequestAdmission?: boolean;
+    writeQueuePositionAsync?(message: IDaemonRequestQueuePositionMessage): Promise<void>;
     writeResultAsync(result: IDaemonCommandResult): Promise<void>;
     writeTerminalChunkAsync(stream: 'stdout' | 'stderr', chunk: Uint8Array): Promise<void>;
     writeTerminalPolicyAsync(result: IDaemonTerminalPolicyResult): Promise<void>;
@@ -247,8 +251,10 @@ export interface IPhasedRequestClient {
     readonly abortSignal: AbortSignal;
     readonly interactiveSession?: IInteractiveRequestSession;
     readonly sessionId: string;
+    readonly supportsRequestAdmission?: boolean;
     writeEventAsync(event: IDaemonEventEnvelope): Promise<void>;
     writeLogChunkAsync(operationId: string, stream: 'stdout' | 'stderr', chunk: Uint8Array): Promise<void>;
+    writeQueuePositionAsync?(message: IDaemonRequestQueuePositionMessage): Promise<void>;
     writeResultAsync(result: IDaemonPhasedRequestResult): Promise<void>;
     writeTerminalPolicyAsync(result: IDaemonTerminalPolicyResult): Promise<void>;
 }
@@ -273,6 +279,8 @@ export interface IRequestSchedulerAcquireOptions {
 // @beta
 export interface IResolvedGlobalCommandRequest {
     // (undocumented)
+    readonly admission: IDaemonRequestAdmissionOptions | undefined;
+    // (undocumented)
     readonly commandName: string;
     // (undocumented)
     readonly cwd: string;
@@ -286,6 +294,8 @@ export interface IResolvedGlobalCommandRequest {
 
 // @beta
 export interface IResolveGlobalCommandRequestOptions {
+    // (undocumented)
+    readonly admission?: IDaemonRequestAdmissionOptions;
     // (undocumented)
     readonly commandName: string;
     // (undocumented)
