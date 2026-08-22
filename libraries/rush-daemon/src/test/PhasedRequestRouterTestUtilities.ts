@@ -61,12 +61,16 @@ export interface ITestClientWrite {
 
 export class TestPhasedRequestClient implements IPhasedRequestClient {
   public readonly abortController: AbortController = new AbortController();
-  public readonly sessionId: string = 'test-session';
+  public readonly sessionId: string;
   public readonly supportsRequestAdmission: boolean = true;
   public readonly writes: ITestClientWrite[] = [];
   public readonly policies: IDaemonTerminalPolicyResult[] = [];
   public interactiveSession: IInteractiveRequestSession | undefined;
   public onWriteAsync: ((write: ITestClientWrite) => Promise<void>) | undefined;
+
+  public constructor(sessionId: string = 'test-session') {
+    this.sessionId = sessionId;
+  }
 
   public get abortSignal(): AbortSignal {
     return this.abortController.signal;
