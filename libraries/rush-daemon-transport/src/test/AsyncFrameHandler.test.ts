@@ -21,6 +21,7 @@ interface IHandlerState {
 
 function createHandler(
   state: IHandlerState,
+  firstReceived: IDeferred<void>,
   firstHandler: IDeferred<void>,
   allReceived: IDeferred<void>
 ): () => Promise<void> {
@@ -28,7 +29,10 @@ function createHandler(
     state.active++;
     state.maximumActive = Math.max(state.maximumActive, state.active);
     state.received++;
-    if (state.received === FIRST_COUNT) await firstHandler.promise;
+    if (state.received === FIRST_COUNT) {
+      firstReceived.resolve();
+      await firstHandler.promise;
+    }
     state.active--;
     if (state.received === FRAME_COUNT) allReceived.resolve();
   };
@@ -45,13 +49,14 @@ async function sendFramesAsync(server: DaemonFrameConnection): Promise<void> {
 it('awaits each incoming frame handler before dispatching the next frame', async () => {
   const paths: IDaemonPaths = createTestDaemonPaths();
   const pair: ITestDaemonPair = await startTestDaemonPair(paths);
+  const firstReceived: IDeferred<void> = createDeferred<void>();
   const firstHandler: IDeferred<void> = createDeferred<void>();
   const allReceived: IDeferred<void> = createDeferred<void>();
   const state: IHandlerState = { active: EMPTY_TOTAL, maximumActive: EMPTY_TOTAL, received: EMPTY_TOTAL };
   try {
-    pair.client.onFrame(createHandler(state, firstHandler, allReceived));
+    pair.client.onFrame(createHandler(state, firstReceived, firstHandler, allReceived));
     await sendFramesAsync(await pair.serverSide);
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await firstReceived.promise;
     expect(state.received).toBe(FIRST_COUNT);
     firstHandler.resolve();
     await allReceived.promise;

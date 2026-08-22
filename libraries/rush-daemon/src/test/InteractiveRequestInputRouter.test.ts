@@ -183,9 +183,14 @@ describe(InteractiveRequestInputRouter.name, () => {
     const session: IInteractiveRequestSession = register(router, 'queued-abort', client).session;
     const writes: number[] = [];
     let releaseFirst: (() => void) | undefined;
+    let resolveFirstWriteStarted: () => void = () => undefined;
+    const firstWriteStarted: Promise<void> = new Promise((resolve) => {
+      resolveFirstWriteStarted = resolve;
+    });
     session.attachInputSink({
       writeInputAsync: async (chunk: Uint8Array): Promise<void> => {
         writes.push(chunk[0]);
+        resolveFirstWriteStarted();
         await new Promise<void>((resolve) => {
           releaseFirst = resolve;
         });
@@ -193,7 +198,7 @@ describe(InteractiveRequestInputRouter.name, () => {
     });
     const firstWrite: Promise<void> = routeAsync(router, 'queued-abort', Uint8Array.of(1));
     const secondWrite: Promise<void> = routeAsync(router, 'queued-abort', Uint8Array.of(2));
-    await Promise.resolve();
+    await firstWriteStarted;
     client.abortController.abort();
     releaseFirst?.();
 
