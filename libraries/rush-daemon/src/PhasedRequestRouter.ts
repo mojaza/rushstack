@@ -385,6 +385,7 @@ function collectOperationOutcomes(
     }
     const errorMessage: string | undefined = observed?.errorMessage ?? retained?.error?.message;
     outcomes.push({
+      observedInCurrentIteration: observed !== undefined,
       result: { operationId: operation.name, status, errorMessage },
       warningsAreAllowed: operation.runner?.warningsAreAllowed ?? false
     });
